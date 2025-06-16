@@ -1,5 +1,9 @@
 FROM ubuntu:12.04
 
+# Allow update and installing package inside the container
+RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak
+COPY sources.list /etc/apt/sources.list
+
 # Install apache
 RUN apt-get update && \
     RUNLEVEL=1 apt-get install -y --no-install-recommends \
@@ -10,7 +14,7 @@ RUN apt-get update && \
         libheimbase1-heimdal libheimntlm0-heimdal libhx509-5-heimdal \
         libkrb5-26-heimdal libldap-2.4-2 libp11-kit0 libroken18-heimdal libsasl2-2 \
         libsqlite3-0 libswitch-perl libtasn1-3 libwind0-heimdal mime-support perl \
-        perl-modules \
+        perl-modules libpq5 libapache2-mod-php5 \
     && \
     apt-get clean && \
     rm -Rf /var/lib/apt/lists/* && \
@@ -53,6 +57,9 @@ RUN mkdir /php && \
         m4 make mlock mysql-common openssl patch pkg-config uuid-dev wget \
         x11-common x11proto-core-dev x11proto-input-dev x11proto-kb-dev \
         x11proto-xext-dev xorg-sgml-doctools xtrans-dev zlib1g-dev
+
+# Symlink libpq.so for PostgreSQL
+RUN ln -s /usr/lib/libpq.so.5 /usr/lib/libpq.so || true
 
 RUN wget http://museum.php.net/php5/php-5.2.17.tar.bz2 && \
     tar xfj php-5.2.17.tar.bz2 && \
@@ -106,7 +113,7 @@ RUN wget http://museum.php.net/php5/php-5.2.17.tar.bz2 && \
         --with-openssl \
         --with-openssl-dir=/usr \
         --disable-pcntl \
-        --without-pgsql \
+        --with-pgsql \
         --with-pspell \
         --without-recode \
         --disable-shmop \
@@ -147,7 +154,7 @@ RUN wget http://museum.php.net/php5/php-5.2.17.tar.bz2 && \
         --without-oci8 \
         --without-pdo-dblib \
         --with-pdo-mysql=/usr \
-        --without-pdo-pgsql \
+        --with-pdo-pgsql \
         --without-pdo-sqlite \
         --without-pdo-odbc \
         --with-readline \
@@ -208,7 +215,7 @@ RUN wget http://museum.php.net/php5/php-5.2.17.tar.bz2 && \
         --with-openssl \
         --with-openssl-dir=/usr \
         --disable-pcntl \
-        --without-pgsql \
+        --with-pgsql \
         --with-pspell \
         --without-recode \
         --disable-shmop \
@@ -249,7 +256,7 @@ RUN wget http://museum.php.net/php5/php-5.2.17.tar.bz2 && \
         --without-oci8 \
         --without-pdo-dblib \
         --with-pdo-mysql=/usr \
-        --without-pdo-pgsql \
+        --with-pdo-pgsql \
         --without-pdo-sqlite \
         --without-pdo-odbc \
         --with-readline \
@@ -312,6 +319,9 @@ RUN pecl install Fileinfo && \
 
 COPY php.ini /etc/php/apache2-php5.2/
 COPY php.ini /etc/php/cli-php5.2/
+
+# Fix libpq.so.5 not found
+RUN apt-get update && apt-get install libpq5
 
 EXPOSE 80
 
